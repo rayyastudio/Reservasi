@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Reservasi Rayya Self Photo Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 0px; }
+    @media (min-width: 640px) { .custom-scrollbar::-webkit-scrollbar { width: 4px; } }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      background: transparent; bottom: 0; color: transparent; cursor: pointer;
+      height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-40 selection:bg-indigo-100 overflow-x-hidden">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-[60] bg-white/90 backdrop-blur-xl border-b border-slate-100 px-5 py-4 flex items-center justify-between leading-tight">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-slate-200">
+        <img src="https://lh3.googleusercontent.com/d/1tXSpQnMtiIzbz4UbU5dcD36cVBvcPT_Q" alt="Rayya Logo" class="w-full h-full object-cover">
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black tracking-tight uppercase leading-none">Rayya Studio</h1>
+        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 leading-none">Rogojampi, Banyuwangi</p>
+      </div>
+    </div>
+    <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+  </header>
+
+  <!-- Toast Notifikasi (Hidden by Default) -->
+  <div id="toast" class="fixed top-20 left-4 right-4 z-[100] sm:left-1/2 sm:-translate-x-1/2 sm:max-w-md hidden transition-all duration-300">
+    <div class="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-3xl flex items-start gap-3 shadow-2xl border border-white/10">
+      <div class="mt-1 shrink-0"><i data-lucide="alert-circle" class="w-5 h-5 text-rose-400"></i></div>
+      <div class="flex-1">
+        <p class="text-xs font-black uppercase text-rose-400 tracking-widest mb-1 leading-none">Data Belum Lengkap</p>
+        <p id="toast-message" class="text-[10px] text-slate-300 font-bold uppercase leading-relaxed"></p>
+      </div>
+      <button onclick="hideToast()" class="p-1 text-slate-500 hover:text-white transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Review Reservasi (Hidden by Default) -->
+  <div id="preview-modal" class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="hidePreviewModal()"></div>
+    <div class="relative bg-white w-full max-w-lg rounded-t-[3rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden h-[85vh] sm:h-auto flex flex-col">
+      <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4 shrink-0"></div>
+      <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <h2 class="text-lg font-black text-slate-900 uppercase">Review Reservasi</h2>
+        </div>
+        <div class="space-y-6">
+          <div class="bg-slate-50 rounded-[2.5rem] p-6 space-y-4 border border-slate-100 shadow-inner" id="preview-details">
+            <!-- Details dynamically filled by JS -->
+          </div>
+
+          <div class="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+              <span class="text-[9px] font-black uppercase text-indigo-400 tracking-[0.2em]">Rincian Biaya</span>
+              <span class="text-xs font-black text-right" id="preview-total-display">Rp 0</span>
+            </div>
+            <div class="space-y-2 text-left" id="preview-cost-breakdown">
+              <!-- Costs dynamically filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="p-8 pt-0 bg-white border-t border-slate-100 grid grid-cols-2 gap-4">
+        <button onclick="hidePreviewModal()" class="w-full py-5 rounded-[1.5rem] border-2 border-slate-200 text-slate-500 font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="edit-2" class="w-5 h-5"></i> EDIT
+        </button>
+        <button onclick="confirmReservasi()" class="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-5 h-5"></i> KIRIM
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-4 py-10 space-y-10">
+    
+    <!-- Step 1: Packages -->
+    <section id="step1">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-100 shrink-0">1</div>
+        <h2 class="text-base sm:text-lg font-black uppercase tracking-tight text-slate-800">Pilih Paket Studio</h2>
+      </div>
+      <div id="packages-container" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <!-- Filled dynamically by JS -->
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+      <div class="space-y-10">
+        <!-- Step 2: Background -->
+        <section id="step2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-100 shrink-0">2</div>
+            <h2 class="text-base sm:text-lg font-black uppercase tracking-tight text-slate-800">Warna Background</h2>
+          </div>
+          <div id="backgrounds-container" class="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            <!-- Filled dynamically by JS -->
+          </div>
+        </section>
+
+        <!-- Step 3: Payment -->
+        <section id="step3">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-100 shrink-0">3</div>
+            <h2 class="text-base sm:text-lg font-black uppercase tracking-tight text-slate-800">Cara Pembayaran</h2>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="selectPaymentMethod('TRANSFER')" id="pay-transfer" class="payment-btn flex flex-col items-center gap-2 p-5 rounded-[2rem] border-2 bg-white border-slate-100 text-slate-400 hover:border-slate-200 transition-all">
+              <i data-lucide="credit-card" class="w-6 h-6"></i>
+              <div class="text-center">
+                <span class="text-[10px] font-black uppercase tracking-widest block leading-none">Transfer</span>
+                <span class="text-[8px] font-bold text-slate-400 uppercase mt-1 block leading-tight">E-wallet & Transfer bank</span>
+              </div>
+            </button>
+            <button onclick="selectPaymentMethod('BAYAR DITEMPAT')" id="pay-cash" class="payment-btn flex flex-col items-center gap-2 p-5 rounded-[2rem] border-2 bg-white border-slate-100 text-slate-400 hover:border-slate-200 transition-all">
+              <i data-lucide="banknote" class="w-6 h-6"></i>
+              <div class="text-center">
+                <span class="text-[10px] font-black uppercase tracking-widest block leading-none">Cash</span>
+                <span class="text-[8px] font-bold text-slate-400 uppercase mt-1 block leading-tight">Bayar di Studio</span>
+              </div>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div class="space-y-10">
+        <!-- Step 4: Schedule Form -->
+        <section id="step4" class="bg-white rounded-[3rem] p-8 sm:p-10 border border-slate-100 shadow-sm space-y-8">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-100 shrink-0">4</div>
+            <h2 class="text-base sm:text-lg font-black uppercase tracking-tight text-slate-800">Data Diri & Jadwal</h2>
+          </div>
+          <div class="space-y-6">
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Nama Lengkap</label>
+              <input type="text" id="input-name" placeholder="Cth: Yuwi" oninput="handleInputChange('name', this.value)" class="w-full h-16 bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-100 transition-all uppercase shadow-inner">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Orang</label>
+                <div class="relative">
+                  <select id="input-people" onchange="handleInputChange('peopleCount', parseInt(this.value))" class="w-full h-16 bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 text-sm font-bold focus:outline-none appearance-none cursor-pointer">
+                    <!-- Dropdown options -->
+                  </select>
+                  <i data-lucide="chevron-down" class="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Tanggal</label>
+                <input type="date" id="input-date" onchange="handleInputChange('date', this.value)" class="w-full h-16 bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 text-sm font-bold focus:outline-none font-sans">
+              </div>
+            </div>
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Jam Kedatangan</label>
+              <div class="relative">
+                <select id="input-time" onchange="handleInputChange('time', this.value)" disabled class="w-full h-16 bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 text-sm font-bold focus:outline-none appearance-none cursor-pointer disabled:opacity-40 font-sans">
+                  <option value="">PILIH JAM</option>
+                </select>
+                <i data-lucide="clock" class="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+              </div>
+            </div>
+
+            <div class="pt-4">
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block ml-1">Boleh share hasil fotomu di sosmed Rayya?</label>
+              <div class="bg-slate-100 p-1.5 rounded-[1.75rem] grid grid-cols-2 gap-1.5 border border-slate-200/50 shadow-inner">
+                <button onclick="setSocialConsent('Boleh dong!')" id="consent-yes" class="consent-btn flex items-center justify-center gap-2.5 py-4 rounded-[1.5rem] transition-all font-black text-[11px] uppercase tracking-wider text-slate-400 hover:text-slate-600">
+                  <i data-lucide="globe" class="w-4 h-4"></i> Boleh
+                </button>
+                <button onclick="setSocialConsent('Privat ya')" id="consent-no" class="consent-btn flex items-center justify-center gap-2.5 py-4 rounded-[1.5rem] transition-all font-black text-[11px] uppercase tracking-wider text-slate-400 hover:text-slate-600">
+                  <i data-lucide="lock" class="w-4 h-4"></i> Privat
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-indigo-50 rounded-[2rem] p-6 border border-indigo-100 flex items-center gap-4">
+              <div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+                <i data-lucide="info" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[10px] font-bold uppercase tracking-tight text-indigo-700 leading-normal">
+                Sesi studio buka jam 08:00 - 21:00. <br>Khusus Jumat rehat jam 10:00 - 13:00.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Step 5: Add-ons -->
+    <section id="step5">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-100 shrink-0">5</div>
+        <h2 class="text-base sm:text-lg font-black uppercase tracking-tight text-slate-800">Perkhidmatan Tambahan (Opsional)</h2>
+      </div>
+      <div id="addons-container" class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1.5 font-medium">
+        <!-- Filled dynamically by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Floating Dynamic Bottom Bar -->
+  <div class="fixed bottom-0 left-0 right-0 z-[70] p-4 sm:p-6 pb-8 sm:pb-10 pointer-events-none">
+    <div class="max-w-4xl mx-auto pointer-events-auto">
+      <div class="bg-slate-900/95 backdrop-blur-2xl border border-white/10 p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-between gap-4">
+        <div class="flex-1 flex flex-col items-start min-w-0 pl-3 leading-tight">
+          <p class="text-[8px] font-black text-slate-500 mb-1.5 uppercase tracking-[0.3em] leading-none whitespace-nowrap">Total Pembayaran</p>
+          <div class="flex items-baseline min-w-0 overflow-hidden">
+            <span id="floating-total-display" class="text-xl sm:text-3xl font-black text-white leading-none whitespace-nowrap tracking-tighter">
+              Rp 0
+            </span>
+          </div>
+        </div>
+        <button id="floating-book-btn" onclick="handleBookingClick()" class="flex items-center gap-2.5 px-10 sm:px-14 py-5 sm:py-6 rounded-[1.75rem] font-black text-[11px] sm:text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl shrink-0 bg-indigo-600 text-white shadow-indigo-600/40 hover:bg-indigo-500">
+          <span id="booking-btn-text">BOOKING</span>
+          <i data-lucide="send" class="w-4 h-4 shrink-0"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Branding -->
+  <footer class="text-center py-20 opacity-20">
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] text-center">Rayya Self Photo Studio · 2025</p>
+  </footer>
+
+  <!-- State & App Script -->
+  <script>
+    // --- Data Konfigurasi ---
+    const packages = [
+      { id: 'express', name: 'EXPRESS', price: 30000, maxCapacity: 2, description: 'SESI CEPAT & HEMAT', includes: ['1–2 ORANG', '10 MENIT SESI FOTO', '1 PRINT FOTO 4R (BASIC)', 'ALL FILES VIA GDRIVE (SIMPAN 3 HARI)'] },
+      { id: 'basic', name: 'BASIC', price: 50000, maxCapacity: 2, badge: 'POPULER', description: 'FAVORIT PELANGGAN', includes: ['1–2 ORANG', '20 MENIT SESI FOTO', '2 PRINT FOTO 4R (BASIC)', 'ALL FILES VIA GDRIVE (SIMPAN 7 HARI)'] },
+      { id: 'standart', name: 'STANDART', price: 75000, maxCapacity: 3, badge: 'TERBAIK', description: 'FASILITAS LENGKAP', includes: ['1–3 ORANG', '25 MENIT SESI FOTO', '3 PRINT 4R (2 BASIC & 1 GRID)', 'ALL FILES VIA GDRIVE (SIMPAN 7 HARI)'] },
+      { id: 'superior', name: 'SUPERIOR', price: 150000, maxCapacity: 7, badge: 'GRUP', description: 'PENGALAMAN MAKSIMAL', includes: ['1–7 ORANG', '40 MENIT SESI FOTO', '6 PRINT 4R (BASIC)', '2 PRINT 4R (GRID)', 'ALL FILES VIA GDRIVE (SIMPAN 7 HARI)'] }
+    ];
+
+    const backgrounds = [
+      { id: 'shades_of_gray', name: 'Gray', img: 'https://lh3.googleusercontent.com/d/17_Wwj-IGWPLPGcQq7UrjL5ouL9yvDews', fallbackColor: 'bg-slate-400', badge: 'Best Seller' },
+      { id: 'artic_white', name: 'White', img: 'https://lh3.googleusercontent.com/d/1cCZt-s8XSb-GDz84eBXjeLY9fovYNM7e', fallbackColor: 'bg-slate-100' },
+      { id: 'latte_bliss', name: 'Latte', img: 'https://lh3.googleusercontent.com/d/1sRKExcEEz3Ss0Ip3BLI4-HYuFkBQFABE', fallbackColor: 'bg-orange-100' },
+      { id: 'midnight_black', name: 'Black', img: 'https://lh3.googleusercontent.com/d/1GffPG9DWxOY3-iJ6PwDK1hxoeb1ihyI5', fallbackColor: 'bg-neutral-900' },
+      { id: 'carnation_pink', name: 'Pink', img: 'https://lh3.googleusercontent.com/d/1Vg_68S-XcF6wu6Bkc1iUHozjf6lbi74c', fallbackColor: 'bg-rose-200' }
+    ];
+
+    const addonItems = [
+      { id: 'extra_time', name: 'Extra Time (5 mnt)', price: 10000 },
+      { id: 'extra_person', name: 'Extra Person', price: 25000, isAuto: true },
+      { id: 'costume_dino', name: 'Costume Dino', price: 5000 },
+      { id: 'print_4r_basic', name: 'Print Foto 4R (Basic)', price: 5000 },
+      { id: 'print_4r_grid', name: 'Print Foto 4R (Grid)', price: 7000 },
+      { id: 'print_2_strip', name: 'Print Foto (2 Strip)', price: 8000 },
+      { id: 'print_a4', name: 'Print Foto A4', price: 15000 },
+      { id: 'ganci_1', name: 'Keychain 1 Sisi', price: 10000 },
+      { id: 'ganci_2', name: 'Keychain 2 Sisi', price: 15000 },
+      { id: 'ganci_karakter', name: 'Keychain Karakter', price: 10000 },
+      { id: 'pigura_4r', name: 'Pigura 4R', price: 15000 },
+      { id: 'pigura_a4', name: 'Pigura A4', price: 30000 }
+    ];
+
+    // --- State Global ---
+    const state = {
+      selectedPackage: null,
+      selectedBackground: null,
+      paymentMethod: null,
+      addons: {},
+      formData: {
+        name: '',
+        peopleCount: 1,
+        date: '',
+        time: '',
+        notes: ''
+      },
+      errors: []
+    };
+
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
+    // --- Integrasi Inisialisasi ---
+    window.onload = function() {
+      // Set batas minimal tanggal ke hari ini
+      document.getElementById('input-date').min = todayStr;
+      
+      // Populasi dropdown jumlah orang
+      const selectPeople = document.getElementById('input-people');
+      for (let i = 1; i <= 10; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = `${i} Orang`;
+        selectPeople.appendChild(opt);
+      }
+
+      // Render komponen-komponen UI awal
+      renderPackages();
+      renderBackgrounds();
+      renderAddons();
+      updateTotal();
+      
+      // Inisialisasi ikon awal
+      lucide.createIcons();
+    };
+
+    // --- Rendering Functions ---
+    function renderPackages() {
+      const container = document.getElementById('packages-container');
+      container.innerHTML = packages.map(pkg => {
+        const isSelected = state.selectedPackage === pkg.id;
+        const badgeHTML = pkg.badge ? `
+          <span class="absolute -top-3 left-6 bg-indigo-600 text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-tighter z-10">
+            ${pkg.badge}
+          </span>
+        ` : '';
+
+        const inclusionsHTML = pkg.includes.map(item => `
+          <li class="flex items-start gap-2 text-[10px] sm:text-[11px] text-slate-500 font-bold uppercase tracking-tighter leading-tight">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5"></i>
+            <span>${item}</span>
+          </li>
+        `).join('');
+
+        return `
+          <div 
+            onclick="selectPackage('${pkg.id}')"
+            class="group relative p-4 sm:p-6 rounded-[2rem] border-2 transition-all duration-300 cursor-pointer flex flex-col h-full text-left ${
+              isSelected 
+                ? 'border-indigo-600 bg-white shadow-xl ring-4 ring-indigo-50' 
+                : 'bg-white border-slate-100 hover:border-indigo-200'
+            }"
+          >
+            ${badgeHTML}
+            <div class="mb-3">
+              <h3 class="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">${pkg.name}</h3>
+              <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase leading-tight">${pkg.description}</p>
+            </div>
+            <div class="mb-4 leading-none">
+              <span class="text-2xl sm:text-3xl font-black text-indigo-600">${pkg.price/1000}K</span>
+            </div>
+            <ul class="space-y-1.5 flex-1 mb-6">
+              ${inclusionsHTML}
+            </ul>
+            <div class="w-full py-3 rounded-2xl text-[10px] font-black text-center transition-all uppercase tracking-[0.2em] ${
+              isSelected ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-400'
+            }">
+              ${isSelected ? 'Terpilih' : 'Pilih'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderBackgrounds() {
+      const container = document.getElementById('backgrounds-container');
+      container.innerHTML = backgrounds.map(bg => {
+        const isSelected = state.selectedBackground === bg.id;
+        const badgeHTML = bg.badge ? `
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none whitespace-nowrap">
+            <span class="bg-indigo-600 text-white text-[7px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-tighter ring-1 ring-white/20">
+              ${bg.badge}
+            </span>
+          </div>
+        ` : '';
+
+        const selectedIndicator = isSelected ? `
+          <div class="absolute inset-0 bg-indigo-600/20 flex items-center justify-center backdrop-blur-[1px]">
+            <i data-lucide="check-circle-2" class="text-white w-6 h-6 drop-shadow-md"></i>
+          </div>
+        ` : '';
+
+        return `
+          <div 
+            onclick="selectBackground('${bg.id}')"
+            class="group relative p-1.5 rounded-2xl border-2 transition-all duration-300 cursor-pointer ${
+              isSelected ? 'border-indigo-600 bg-indigo-50 shadow-lg scale-[1.03]' : 'border-slate-50 bg-slate-50 hover:border-slate-200'
+            } ${bg.badge ? 'mt-3' : ''}"
+          >
+            ${badgeHTML}
+            <div class="aspect-[3/4] rounded-xl mb-1.5 overflow-hidden relative shadow-inner ${bg.fallbackColor}">
+              <img 
+                src="${bg.img}" 
+                alt="${bg.name}" 
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-0"
+                onload="this.style.opacity = 1"
+                onerror="this.style.display = 'none'"
+              />
+              <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2">
+                 <span class="text-[7px] font-black text-white uppercase tracking-widest leading-none truncate">
+                    ${bg.name}
+                 </span>
+              </div>
+              <div class="absolute inset-x-0 bottom-1 text-center pointer-events-none sm:group-hover:hidden">
+                 <span class="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] drop-shadow-md">
+                    ${bg.name}
+                 </span>
+              </div>
+              ${selectedIndicator}
+            </div>
+            <h3 class="font-bold text-[9px] text-center text-slate-600 truncate px-1 uppercase">${bg.name}</h3>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderAddons() {
+      const container = document.getElementById('addons-container');
+      container.innerHTML = addonItems.map(item => {
+        const qty = state.addons[item.id] || 0;
+        const isAuto = item.isAuto === true;
+
+        return `
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+            <div class="flex-1 pr-6">
+              <div class="flex items-center gap-2">
+                <p class="font-black text-[13px] text-slate-800 tracking-tight uppercase leading-none">${item.name}</p>
+                ${isAuto ? `<span class="text-[8px] font-black px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full uppercase whitespace-nowrap">Auto</span>` : ''}
+              </div>
+              <p class="text-[10px] text-slate-400 font-black mt-0.5 uppercase leading-none">Rp ${item.price.toLocaleString('id-ID')}</p>
+            </div>
+            <div class="flex items-center gap-3 p-1 rounded-2xl border-2 transition-all ${isAuto ? 'opacity-40 bg-slate-50 border-slate-50' : 'bg-white border-slate-100 shadow-sm'}">
+              <button ${isAuto ? 'disabled' : ''} onclick="updateAddon('${item.id}', -1)" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 active:scale-90 hover:text-rose-500 transition-colors">
+                <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+              </button>
+              <span class="w-5 text-center text-xs font-black text-slate-700 font-sans">${qty}</span>
+              <button ${isAuto ? 'disabled' : ''} onclick="updateAddon('${item.id}', 1)" class="w-9 h-9 rounded-xl flex items-center justify-center text-indigo-500 active:scale-90 hover:bg-indigo-50 transition-colors">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // --- State Mutation & Action Handlers ---
+    function selectPackage(id) {
+      state.selectedPackage = id;
+      renderPackages();
+      calculateExtraPersonAddon();
+      updateTotal();
+      clearErrors();
+    }
+
+    function selectBackground(id) {
+      state.selectedBackground = id;
+      renderBackgrounds();
+      updateTotal();
+      clearErrors();
+    }
+
+    function selectPaymentMethod(method) {
+      state.paymentMethod = method;
+      document.querySelectorAll('.payment-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'bg-white', 'shadow-xl', 'scale-[1.03]');
+        btn.classList.add('bg-white', 'border-slate-100', 'text-slate-400');
+      });
+
+      const selectedBtn = method === 'TRANSFER' ? document.getElementById('pay-transfer') : document.getElementById('pay-cash');
+      selectedBtn.classList.remove('bg-white', 'border-slate-100', 'text-slate-400');
+      selectedBtn.classList.add('border-indigo-600', 'bg-white', 'shadow-xl', 'scale-[1.03]');
+      
+      updateTotal();
+      clearErrors();
+    }
+
+    function setSocialConsent(consent) {
+      state.formData.notes = consent;
+      document.querySelectorAll('.consent-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'bg-slate-800', 'text-white', 'shadow-xl', 'scale-[1.02]');
+        btn.classList.add('text-slate-400', 'hover:text-slate-600');
+      });
+
+      const activeBtn = consent === 'Boleh dong!' ? document.getElementById('consent-yes') : document.getElementById('consent-no');
+      activeBtn.classList.remove('text-slate-400', 'hover:text-slate-600');
+      if (consent === 'Boleh dong!') {
+        activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-xl', 'scale-[1.02]');
+        // add anim bounce
+        const globeIcon = activeBtn.querySelector('i');
+        if (globeIcon) globeIcon.classList.add('animate-bounce');
+      } else {
+        activeBtn.classList.add('bg-slate-800', 'text-white', 'shadow-xl', 'scale-[1.02]');
+        const otherBtn = document.getElementById('consent-yes');
+        const globeIcon = otherBtn.querySelector('i');
+        if (globeIcon) globeIcon.classList.remove('animate-bounce');
+      }
+      
+      clearErrors();
+    }
+
+    function handleInputChange(field, value) {
+      state.formData[field] = value;
+      if (field === 'peopleCount') {
+        calculateExtraPersonAddon();
+      }
+      if (field === 'date') {
+        state.formData.time = '';
+        generateTimeSlots();
+      }
+      updateTotal();
+      clearErrors();
+    }
+
+    function calculateExtraPersonAddon() {
+      if (!state.selectedPackage) return;
+      const currentPkg = packages.find(p => p.id === state.selectedPackage);
+      const extraPeople = Math.max(0, state.formData.peopleCount - currentPkg.maxCapacity);
+      state.addons['extra_person'] = extraPeople;
+      renderAddons();
+    }
+
+    function updateAddon(id, delta) {
+      const targetItem = addonItems.find(i => i.id === id);
+      if (targetItem && targetItem.isAuto) return;
+      
+      const currentQty = state.addons[id] || 0;
+      state.addons[id] = Math.max(0, currentQty + delta);
+      renderAddons();
+      updateTotal();
+    }
+
+    function generateTimeSlots() {
+      const timeSelect = document.getElementById('input-time');
+      timeSelect.innerHTML = '<option value="">PILIH JAM</option>';
+      
+      if (!state.formData.date) {
+        timeSelect.disabled = true;
+        return;
+      }
+
+      timeSelect.disabled = false;
+      const isToday = state.formData.date === todayStr;
+      const now = new Date();
+      const currentHour = now.getHours();
+      
+      const slots = [];
+      const generateRange = (start, end) => {
+        for (let h = start; h < end; h++) {
+          if (!isToday || h > currentHour) {
+            slots.push(`${h.toString().padStart(2, '0')}:00`);
+            slots.push(`${h.toString().padStart(2, '0')}:30`);
+          }
+        }
+      };
+
+      const dateObj = new Date(state.formData.date);
+      // Day 5 = Friday
+      if (dateObj.getDay() === 5) {
+        generateRange(8, 10);
+        generateRange(13, 21);
+      } else {
+        generateRange(8, 21);
+      }
+
+      slots.forEach(slot => {
+        const opt = document.createElement('option');
+        opt.value = slot;
+        opt.innerText = `${slot} WIB`;
+        if (state.formData.time === slot) {
+          opt.selected = true;
+        }
+        timeSelect.appendChild(opt);
+      });
+    }
+
+    // --- Kalkulasi Total & Validasi ---
+    function calculateTotalPrice() {
+      const pkgPrice = state.selectedPackage ? packages.find(p => p.id === state.selectedPackage).price : 0;
+      const addonsPrice = Object.entries(state.addons).reduce((sum, [id, qty]) => {
+        const item = addonItems.find(i => i.id === id);
+        return sum + (item ? item.price * qty : 0);
+      }, 0);
+      return pkgPrice + addonsPrice;
+    }
+
+    function updateTotal() {
+      const totalPrice = calculateTotalPrice();
+      const formattedTotal = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+      
+      document.getElementById('floating-total-display').innerText = formattedTotal;
+      
+      // Update floating button status
+      const btn = document.getElementById('floating-book-btn');
+      const btnText = document.getElementById('booking-btn-text');
+      
+      if (state.errors.length > 0) {
+        btn.className = "flex items-center gap-2.5 px-10 sm:px-14 py-5 sm:py-6 rounded-[1.75rem] font-black text-[11px] sm:text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl shrink-0 bg-rose-500 text-white";
+        btnText.innerText = 'LENGKAPI';
+      } else {
+        btn.className = "flex items-center gap-2.5 px-10 sm:px-14 py-5 sm:py-6 rounded-[1.75rem] font-black text-[11px] sm:text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl shrink-0 bg-indigo-600 text-white shadow-indigo-600/40 hover:bg-indigo-500";
+        btnText.innerText = 'BOOKING';
+      }
+    }
+
+    function clearErrors() {
+      if (state.errors.length > 0) {
+        state.errors = [];
+        hideToast();
+        updateTotal();
+      }
+    }
+
+    function validateForm() {
+      const newErrors = [];
+      if (!state.selectedPackage) newErrors.push("Paket");
+      if (!state.selectedBackground) newErrors.push("Background");
+      if (!state.paymentMethod) newErrors.push("Metode Bayar");
+      if (!state.formData.name.trim()) newErrors.push("Nama");
+      if (!state.formData.date || !state.formData.time) newErrors.push("Jadwal & Jam");
+      if (!state.formData.notes) newErrors.push("Izin Share");
+      
+      if (newErrors.length > 0) {
+        state.errors = newErrors;
+        showToastNotification(newErrors.join(' • '));
+        updateTotal();
+        return false;
+      }
+      return true;
+    }
+
+    // --- Toast & Modals ---
+    function showToastNotification(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = message;
+      toast.classList.remove('hidden');
+      toast.classList.add('block');
+      
+      // Auto-hide toast after 5s
+      setTimeout(() => {
+        hideToast();
+      }, 5000);
+    }
+
+    function hideToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('hidden');
+      toast.classList.remove('block');
+    }
+
+    function showPreviewModal() {
+      const modal = document.getElementById('preview-modal');
+      const detailsContainer = document.getElementById('preview-details');
+      const breakdownContainer = document.getElementById('preview-cost-breakdown');
+      const totalDisplay = document.getElementById('preview-total-display');
+      
+      const pkg = packages.find(p => p.id === state.selectedPackage);
+      const bg = backgrounds.find(b => b.id === state.selectedBackground);
+
+      // Detail Summary
+      const items = [
+        { label: 'Nama Lengkap', value: state.formData.name },
+        { label: 'Pilihan Paket', value: pkg?.name },
+        { label: 'Background', value: bg?.name },
+        { label: 'Jumlah Orang', value: `${state.formData.peopleCount} Orang` },
+        { label: 'Tanggal Sesi', value: formatDatePreview(state.formData.date) },
+        { label: 'Jam Kehadiran', value: `${state.formData.time} WIB`, highlight: true },
+        { label: 'Metode Bayar', value: state.paymentMethod },
+        { label: 'Izin Posting', value: state.formData.notes }
+      ];
+
+      detailsContainer.innerHTML = items.map(item => `
+        <div class="flex justify-between items-start gap-4 text-left">
+          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-1 shrink-0">${item.label}</span>
+          <span class="text-sm font-bold uppercase text-right leading-tight ${item.highlight ? 'text-indigo-600 underline decoration-2 underline-offset-4' : 'text-slate-800'}">${item.value}</span>
+        </div>
+      `).join('');
+
+      // Cost Breakdown
+      let breakdownHTML = `<p class="text-sm font-black uppercase tracking-tight">${pkg?.name}</p>`;
+      
+      const activeAddons = Object.entries(state.addons).filter(([_, qty]) => qty > 0);
+      activeAddons.forEach(([id, qty]) => {
+        const item = addonItems.find(i => i.id === id);
+        if (item) {
+          breakdownHTML += `
+            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+              <span>${item.name} x${qty}</span>
+              <span class="text-right">Rp ${(item.price * qty).toLocaleString('id-ID')}</span>
+            </div>
+          `;
+        }
+      });
+
+      breakdownContainer.innerHTML = breakdownHTML;
+      totalDisplay.innerText = `Rp ${calculateTotalPrice().toLocaleString('id-ID')}`;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function hidePreviewModal() {
+      const modal = document.getElementById('preview-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleBookingClick() {
+      if (validateForm()) {
+        showPreviewModal();
+      }
+    }
+
+    // --- Helpers Format Tanggal ---
+    function formatDateBM(dateStr) {
+      if (!dateStr) return '';
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return `${days[date.getDay()]}, ${day} ${months[date.getMonth()]} ${year}`;
+    }
+
+    function formatDatePreview(dateStr) {
+      if (!dateStr) return '';
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    }
+
+    // --- Kirim WhatsApp ---
+    function confirmReservasi() {
+      const pkg = packages.find(p => p.id === state.selectedPackage);
+      const bg = backgrounds.find(b => b.id === state.selectedBackground);
+      const selectedAddonsArray = Object.entries(state.addons).filter(([_, q]) => q > 0);
+      
+      const addonsDetailText = selectedAddonsArray
+        .map(([id, q]) => {
+          const item = addonItems.find(i => i.id === id);
+          return `• ${item.name} (${q}x): Rp ${(item.price * q).toLocaleString('id-ID')}`;
+        }).join('\n');
+
+      const message = `*RESERVASI RAYYA STUDIO*
+
+*DATA PELANGGAN*
+Nama: ${state.formData.name.toUpperCase()}
+Jumlah: ${state.formData.peopleCount} Orang
+
+*JADWAL SESI*
+Jadwal: ${formatDateBM(state.formData.date)}
+Jam: ${state.formData.time} WIB
+Background: ${bg.name}
+
+*RINCIAN BIAYA*
+Paket Utama (${pkg.name}): Rp ${pkg.price.toLocaleString('id-ID')}
+${selectedAddonsArray.length > 0 ? `Layanan Tambahan:\n${addonsDetailText}` : 'Layanan Tambahan: -'}
+
+*TOTAL PEMBAYARAN*
+Metode: ${state.paymentMethod.toUpperCase()}
+*TOTAL AKHIR: Rp ${calculateTotalPrice().toLocaleString('id-ID')}*
+
+*IZIN SOSMED*
+Status: ${state.formData.notes}
+
+Mohon konfirmasi ketersediaan jadwal. Terima kasih!`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/6285156310167?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+      hidePreviewModal();
+    }
+  </script>
+</body>
+</html>
